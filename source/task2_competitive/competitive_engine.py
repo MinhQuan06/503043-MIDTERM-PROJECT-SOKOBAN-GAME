@@ -33,9 +33,8 @@ class MoveProposal:
     box_to: Optional[Position] = None
 
 
+# 
 class CompetitiveEngine:
-    """Rules engine for simultaneous two-agent Sokoban."""
-
     def __init__(self, state: CompetitiveState, max_turns: int):
         if max_turns < 1:
             raise ValueError("max_turns must be at least 1.")
@@ -102,10 +101,6 @@ class CompetitiveEngine:
     def step(self, actions: Dict[int, str]):
         """
         Apply one simultaneous game turn.
-
-        actions example:
-            {1: "East", 2: "North"}
-
         Returns a report describing the resolved turn.
         """
         if self.finished:
@@ -122,17 +117,16 @@ class CompetitiveEngine:
         p1 = proposals[1]
         p2 = proposals[2]
 
-        # Both agents cannot occupy the same destination.
+        # Cả 2 agent không thể cùng chiếm giữ 1 target.
         if p1.target == p2.target:
             self._resolve_conflict(p1, p2)
 
-        # Agents cannot pass through each other by swapping positions.
+        # Cả 2 agent đều không thể bước qua nhau.
         if p1.target == p2.start and p2.target == p1.start:
             p1.valid = False
             p2.valid = False
 
-        # Both agents cannot push the same box.
-        # Two different boxes cannot be pushed into the same cell.
+        # Cả 2 agent không thể cùng đẩy một chiếc hộp, dùng xác suất p để chọn 1 agent đây, agent còn lại mất lượt
         if (
             p1.valid
             and p2.valid
@@ -149,15 +143,14 @@ class CompetitiveEngine:
 
         # A box cannot be pushed into the other agent's destination.
         for pusher, other in ((p1, p2), (p2, p1)):
-            if pusher.box_to is not None:
+            if pusher.valid and other.valid and pusher.box_to is not None:
                 if pusher.box_to == other.target:
-                    pusher.valid = False
-                    other.valid = False
+                    self._resolve_conflict(pusher, other)
+                    continue
 
                 # Avoid entering the old cell of a box being pushed.
                 if other.target == pusher.box_from:
-                    pusher.valid = False
-                    other.valid = False
+                    self._resolve_conflict(pusher, other)
 
         # An agent cannot enter a cell occupied by an agent
         # that is staying in place.
@@ -189,7 +182,7 @@ class CompetitiveEngine:
                 owner = self.state.boxes.pop(proposal.box_from)
                 self.state.boxes[proposal.box_to] = proposal.agent_id
 
-        # Update both agent positions.
+        # Cập nhật vị trí của 2 agent
         for proposal in (p1, p2):
             if proposal.valid:
                 self.state.agents[proposal.agent_id] = proposal.target

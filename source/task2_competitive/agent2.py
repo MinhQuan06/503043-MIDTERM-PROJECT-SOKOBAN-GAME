@@ -81,10 +81,6 @@ class Agent2:
         )
 
     def heuristic(self, player, boxes, goals, state):
-        """
-        Greedy estimate of effort to gain another point.
-        Lower values are preferred.
-        """
         box_dict = dict(boxes)
         opponent = state.agents[1]
         candidates = []

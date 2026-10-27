@@ -31,10 +31,6 @@ class Agent1:
         )
 
     def get_successors(self, state, player, boxes):
-        """
-        boxes is a tuple of (position, owner) pairs.
-        Agent 2 is treated as a static obstacle.
-        """
         successors = []
         opponent = state.agents[2]
 
@@ -89,12 +85,6 @@ class Agent1:
         )
 
     def heuristic(self, player, boxes, goals):
-        """
-        Estimate the effort needed to score the next point.
-
-        This is a competitive search estimate, not a
-        guaranteed admissible Sokoban heuristic.
-        """
         box_dict = dict(boxes)
         candidates = []
 
@@ -109,8 +99,6 @@ class Agent1:
                 behind = (bx - dx, by - dy)
                 destination = (bx + dx, by + dy)
 
-                # Prefer boxes that can be approached.
-                # Actual legality is checked in successors.
                 if destination in box_dict:
                     continue
 

@@ -23,7 +23,9 @@ class CompetitiveSetupScreen(BaseScreen):
 
     # Chỉ chọn các map có đủ A và X.
     MAPS = [
-        ("competitive map", "competitive_map.txt"),
+        ("Map 1", "competitive_map.txt"),  
+        ("Map 2", "competitive_map2.txt"), 
+        ("Map 3", "competitive_map3.txt"),
     ]
 
     def __init__(self, app):

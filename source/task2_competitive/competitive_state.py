@@ -18,7 +18,6 @@ class CompetitiveState:
 
     @classmethod
     def from_text(cls, text: str):
-        """Create a competitive Sokoban state from map text."""
         lines = text.splitlines()
 
         if not lines:
@@ -36,7 +35,6 @@ class CompetitiveState:
             for x in range(width):
                 pos = (x, y)
 
-                # Missing cells in shorter rows are treated as walls.
                 if x >= len(line):
                     walls.add(pos)
                     continue
@@ -93,12 +91,11 @@ class CompetitiveState:
 
     @classmethod
     def from_file(cls, path: str):
-        """Load a map from a UTF-8 text file."""
         with open(path, "r", encoding="utf-8") as file:
             return cls.from_text(file.read())
 
     def clone(self):
-        """Create an independent copy of the state."""
+        # Tạo trạng thái độc lập
         return CompetitiveState(
             width=self.width,
             height=self.height,
@@ -110,7 +107,7 @@ class CompetitiveState:
         )
 
     def score(self, agent_id: int) -> int:
-        """Count goal-occupied boxes owned by this agent."""
+        # Đếm các ô chứa mục tiêu của agent
         return sum(
             1
             for pos, owner in self.boxes.items()
@@ -118,17 +115,16 @@ class CompetitiveState:
         )
 
     def total_completed(self) -> int:
-        """Count all boxes currently on goals."""
+        # Đếm tất cả box nằm trên target
         return sum(pos in self.goals for pos in self.boxes)
 
     def is_solved(self) -> bool:
-        """True when every box is on a goal."""
         return bool(self.boxes) and all(
             pos in self.goals for pos in self.boxes
         )
 
     def winner(self):
-        """Return 1, 2, or None for a tie."""
+        # Trả về 1, 2 nếu None là hòa
         score_1 = self.score(1)
         score_2 = self.score(2)
 

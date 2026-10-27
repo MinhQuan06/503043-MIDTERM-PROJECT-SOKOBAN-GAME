@@ -33,9 +33,8 @@ class MoveProposal:
     box_to: Optional[Position] = None
 
 
+# 
 class CompetitiveEngine:
-    """Rules engine for simultaneous two-agent Sokoban."""
-
     def __init__(self, state: CompetitiveState, max_turns: int):
         if max_turns < 1:
             raise ValueError("max_turns must be at least 1.")
@@ -67,11 +66,10 @@ class CompetitiveEngine:
         target = self._add(start, direction)
         proposal = MoveProposal(agent_id, start, target)
 
-        # Waiting is always legal.
         if target == start:
             return proposal
 
-        # Cannot move outside the map or into a wall.
+        # Không di chuyển xuyên tường
         if (
             not self._is_inside(target)
             or target in self.state.walls
@@ -79,11 +77,10 @@ class CompetitiveEngine:
             proposal.valid = False
             return proposal
 
-        # Ordinary movement.
         if target not in self.state.boxes:
             return proposal
 
-        # Pushing a box.
+        # Đẩy hộp
         box_target = self._add(target, direction)
 
         if (
@@ -100,14 +97,6 @@ class CompetitiveEngine:
         return proposal
 
     def step(self, actions: Dict[int, str]):
-        """
-        Apply one simultaneous game turn.
-
-        actions example:
-            {1: "East", 2: "North"}
-
-        Returns a report describing the resolved turn.
-        """
         if self.finished:
             raise RuntimeError("The game has already finished.")
 
@@ -122,17 +111,16 @@ class CompetitiveEngine:
         p1 = proposals[1]
         p2 = proposals[2]
 
-        # Both agents cannot occupy the same destination.
+        # Cả 2 agent không thể cùng chiếm giữ 1 target.
         if p1.target == p2.target:
             self._resolve_conflict(p1, p2)
 
-        # Agents cannot pass through each other by swapping positions.
+        # Cả 2 agent đều không thể bước qua nhau.
         if p1.target == p2.start and p2.target == p1.start:
             p1.valid = False
             p2.valid = False
 
-        # Both agents cannot push the same box.
-        # Two different boxes cannot be pushed into the same cell.
+        # Cả 2 agent không thể cùng đẩy một chiếc hộp, dùng xác suất p để chọn 1 agent đây, agent còn lại mất lượt
         if (
             p1.valid
             and p2.valid
@@ -147,28 +135,25 @@ class CompetitiveEngine:
         ):
             self._resolve_conflict(p1, p2)
 
-        # A box cannot be pushed into the other agent's destination.
+        # Cả 2 agent không được đẩy box đi cùng hướng tới 1 target
         for pusher, other in ((p1, p2), (p2, p1)):
-            if pusher.box_to is not None:
+            if pusher.valid and other.valid and pusher.box_to is not None:
                 if pusher.box_to == other.target:
-                    pusher.valid = False
-                    other.valid = False
+                    self._resolve_conflict(pusher, other)
+                    continue
 
-                # Avoid entering the old cell of a box being pushed.
+                # Không cho agent còn lại đẩy box vào ô box cũ của agent kia
                 if other.target == pusher.box_from:
-                    pusher.valid = False
-                    other.valid = False
+                    self._resolve_conflict(pusher, other)
 
-        # An agent cannot enter a cell occupied by an agent
-        # that is staying in place.
+        # Khi 1 agent đang đứng yên, thì agent kia không được đi vào, cũng không dùng xác suất p
         for mover, other in ((p1, p2), (p2, p1)):
             if mover.target == other.start and other.target == other.start:
                 mover.valid = False
 
-        # Resolve dependencies when an agent tries to enter
-        # the current position of the other agent.
         changed = True
 
+        # Trường hợp nếu 1 agent muốn vào ô của agent kia đang đứng, với điều kiện agent kia phải rời đi thì mới được vào, còn không thì agent sẽ không vào ô đó
         while changed:
             changed = False
 
@@ -183,13 +168,13 @@ class CompetitiveEngine:
                 if not other.valid or other.target == other.start:
                     mover.valid = False
                     changed = True
-        # Apply box pushes only after resolving conflicts.
+        
         for proposal in (p1, p2):
             if proposal.valid and proposal.box_from is not None:
                 owner = self.state.boxes.pop(proposal.box_from)
                 self.state.boxes[proposal.box_to] = proposal.agent_id
 
-        # Update both agent positions.
+        # Cập nhật vị trí của 2 agent
         for proposal in (p1, p2):
             if proposal.valid:
                 self.state.agents[proposal.agent_id] = proposal.target

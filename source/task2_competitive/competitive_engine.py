@@ -1,4 +1,4 @@
-
+import random
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
@@ -47,6 +47,15 @@ class CompetitiveEngine:
     @staticmethod
     def _add(a: Position, b: Position) -> Position:
         return a[0] + b[0], a[1] + b[1]
+
+    # Hàm dùng để giải quyết nếu như 2 agent cùng vào 1 vị trí, đẩy 1 hộp, đẩy 2 hộp cùng 1 chỗ/đích
+    # p roll theo phân bố đều liên tục, p<0.5 agent 1 thắng lượt và agent 2 sẽ mất lượt, và ngược lại
+    def _resolve_conflict(self, p1: MoveProposal, p2:MoveProposal):
+        p = random.random()
+        if p < 0.5:
+            p2.valid = False
+        else:
+            p1.valid = False
 
     def _propose(self, agent_id: int, action: str) -> MoveProposal:
         start = self.state.agents[agent_id]
@@ -115,8 +124,7 @@ class CompetitiveEngine:
 
         # Both agents cannot occupy the same destination.
         if p1.target == p2.target:
-            p1.valid = False
-            p2.valid = False
+            self._resolve_conflict(p1, p2)
 
         # Agents cannot pass through each other by swapping positions.
         if p1.target == p2.start and p2.target == p1.start:
@@ -132,14 +140,12 @@ class CompetitiveEngine:
             and p2.box_to is not None
             and p1.box_to == p2.box_to
         ):
-            p1.valid = False
-            p2.valid = False
+            self._resolve_conflict(p1, p2)
         if (
             p1.box_from is not None
             and p1.box_from == p2.box_from
         ):
-            p1.valid = False
-            p2.valid = False
+            self._resolve_conflict(p1, p2)
 
         # A box cannot be pushed into the other agent's destination.
         for pusher, other in ((p1, p2), (p2, p1)):
